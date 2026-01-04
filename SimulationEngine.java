@@ -114,4 +114,12 @@ public class SimulationEngine {
         }
         return allTrucks;
     }
+
+    public List<FireStation> getFireStations() {
+        return this.fireStations;
+    }
+
+    public List<Incident> getActiveIncidents() {
+        return this.activeIncidents;
+    }
 }
