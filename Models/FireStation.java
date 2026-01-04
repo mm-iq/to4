@@ -3,6 +3,7 @@ package Models;
 import java.util.ArrayList;
 import java.util.List;
 
+import App.SimulationLogger;
 import Observers.*;
 import States.*;
 
@@ -30,7 +31,7 @@ public class FireStation implements IObserver {
     @Override
     public void update(Incident incident) {
         
-        System.out.println("STACJA [" + this.name + "]: Otrzymałem zgłoszenie o " +
+        SimulationLogger.addLog("STACJA [" + this.name + "]: Otrzymałem zgłoszenie o " +
         incident.getType() + " na pozycji (" + incident.getLatitude() + ", " + 
         incident.getLongitude() + ")");
         /*

@@ -2,6 +2,7 @@ package States;
 
 import java.util.Random;
 
+import App.SimulationLogger;
 import Models.*;
 
 public class ActionState implements ITruckState {
@@ -14,7 +15,7 @@ public class ActionState implements ITruckState {
         if(random.nextDouble() < 0.05) {
             // fałszywy alarm → czas akcji 0 s
             this.actionTime = 0;
-            System.out.print("Fałszywy alarm: ");
+            SimulationLogger.addLog("Fałszywy alarm: ");
         }
         else {
             // w przeciwnym razie → losowanie czasu 5-25 s
@@ -28,7 +29,7 @@ public class ActionState implements ITruckState {
         // jeśli zakończył się czas akcji
         if(truck.getElapsedTime() >= actionTime) {
             // zakończenie akcji
-            System.out.print("Zakończyłem akcję: id" + truck.getTruckId() + "ze stacji: " + truck.getTruckFireStation());
+            SimulationLogger.addLog("Zakończyłem akcję: id" + truck.getTruckId() + "ze stacji: " + truck.getTruckFireStation());
             truck.setTruckState(new ReturningState());            
         }
         else {

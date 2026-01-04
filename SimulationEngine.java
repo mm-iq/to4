@@ -60,10 +60,10 @@ public class SimulationEngine {
         // dodanie wozów
         for(FireStation fireStation : fireStations) {
             for(int i=0; i<5; i++) fireStation.addTruck(new Truck(fireStation));
-            System.out.println("Dodałem wozy do stacji: " + fireStation.getName());
+            SimulationLogger.addLog("Dodałem wozy do stacji: " + fireStation.getName());
 
             skkm.addObserver(fireStation);
-            System.out.println("Dodałem stację: " + fireStation.getName() + " do listy obserwatorów.");
+            SimulationLogger.addLog("Dodałem stację: " + fireStation.getName() + " do listy obserwatorów.");
         }
     }
 
@@ -74,7 +74,7 @@ public class SimulationEngine {
         if(second%10 == 0) {
             Incident newIncident = drawIncident();
             activeIncidents.add(newIncident);
-            System.out.println("!!! NOWE ZDARZENIE: " + newIncident.getType());
+            SimulationLogger.addLog("!!! NOWE ZDARZENIE: " + newIncident.getType());
             skkm.handleIncident(newIncident, fireStations);
         }
 

@@ -95,7 +95,7 @@ public class SkkmSwingApp {
         tableModel.setRowCount(0);
 
         // Pobieramy nową listę wozów z silnika
-        List<Truck> trucks = engine.getAllTrucksForTable();
+        List<Truck> trucks = engine.getAllTrucksFromAllStationsAsOneList();
 
         for (Truck t : trucks) {
             // Dodajemy wiersz do tabeli
