@@ -36,5 +36,10 @@ public class ActionState implements ITruckState {
             truck.incrementTime();
         }
     }
+
+    @Override
+    public String toString() {
+        return "W AKCJI";
+    }    
     
 }

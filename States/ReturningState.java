@@ -26,4 +26,9 @@ public class ReturningState implements ITruckState {
         // zwiększamy licznik czasu w wozie
         truck.incrementTime();
     }
+
+    @Override
+    public String toString() {
+        return "POWRÓT";
+    }
 }

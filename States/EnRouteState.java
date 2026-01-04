@@ -26,5 +26,10 @@ public class EnRouteState implements ITruckState {
         // zwiększamy licznik czasu w wozie
         truck.incrementTime();
     }
+
+    @Override
+    public String toString() {
+        return "DOJAZD";
+    }
     
 }

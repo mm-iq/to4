@@ -11,6 +11,8 @@ public class SimulationEngine {
     private List<Incident> activeIncidents = new ArrayList<>();
     private DispatchCenter skkm = new DispatchCenter();
     private Random random = new Random();
+
+    private int second = 0;
     
     public void setup() {
         
@@ -64,48 +66,23 @@ public class SimulationEngine {
             System.out.println("Dodałem stację: " + fireStation.getName() + " do listy obserwatorów.");
         }
     }
-    
-    public void start() {
-        
-        System.out.println("Symulacja została uruchomiona...");
-        int second = 0;
 
-        while(true) {
-            second++;
-            System.out.println("\n--- SEKUNDA " + second + " ---");
-            
-            // losowe zdarzenie co 10 sekund
-            if(second % 5 == 0) {
-                
-                printDashboard(second);
-                Incident newIncident = drawIncident();
-                activeIncidents.add(newIncident);
-                System.out.println("!!! NOWE ZDARZENIE: " + newIncident.getType());
-                skkm.handleIncident(newIncident, fireStations);
+    public void tick() {
+
+        second++;
+
+        if(second%10 == 0) {
+            Incident newIncident = drawIncident();
+            activeIncidents.add(newIncident);
+            System.out.println("!!! NOWE ZDARZENIE: " + newIncident.getType());
+            skkm.handleIncident(newIncident, fireStations);
+        }
+
+        // aktualizacja wozów
+        for(FireStation fireStation : fireStations) {
+            for(Truck truck : fireStation.getAvailableTrucks() == null ? new ArrayList<Truck>() : getAllTrucksFromStation(fireStation)){
+                truck.updateTruckState();
             }
-
-            List<String> logs = SimulationLogger.consumeLogs();
-            for(String log : logs) {
-                System.out.println(log);
-            }
-
-
-            // aktualizacja wozów
-            for(FireStation fireStation : fireStations) {
-                for(Truck truck : fireStation.getAvailableTrucks() == null ? new ArrayList<Truck>() : getAllTrucksFromStation(fireStation)){
-                    truck.updateTruckState();
-                }
-            }
-
-            try { Thread.sleep(1000); } catch (InterruptedException e) { break; }
-            
-        // // po wylosowaniu Incident wywołujemy powiadomienie DispatchCenter.notify
-        // System.out.println("---GENEROWANIE ZDARZENIA---");
-        // activeIncidents.add(new Incident(Incident.IncidentType.PZ, 50.050, 19.950));
-    
-        // // każda jednosta dostaje w update() powiadomienie i sprawdza dostępne wozy
-        // System.out.println("---POWIADAMIAM JEDNOSTKI---");
-        // skkm.notifyObservers(activeIncidents.get(0));
         }
     }
 
@@ -115,78 +92,26 @@ public class SimulationEngine {
         double randomLatitude = 49.95855 + (50.15456 - 49.95855) * random.nextDouble();
         double randomLongitude = 19.68829 + (20.02470 - 19.68829) * random.nextDouble();
 
-        Incident incident = new Incident(Incident.IncidentType.values()[randomTypeIndex], randomLatitude, randomLongitude);
-
-        return incident;
-    }
-
-    private void printDashboard(int second) {
-        // --- CZYSZCZENIE KONSOLI ---
-        System.out.print("\033[H\033[2J");  
-        System.out.flush();
-    
-        // --- NAGŁÓWEK ---
-        System.out.println( "╔════════════════════════════════════════════════════════════════════╗");
-        System.out.println("║                   SYMULACJA SKKM - CZAS: " + String.format("%04d", second) + " s                 ║");
-        System.out.println("╚════════════════════════════════════════════════════════════════════╝" );
-
-
-        System.out.println(""); 
-
-        // --- TABELA STANU WOZÓW ---
-        Incident currentIncident = activeIncidents.isEmpty() ? null : activeIncidents.get(activeIncidents.size() - 1);
-
-        for (FireStation station : fireStations) {
-            
-            // Obliczamy dystans, jeśli jest aktywny incydent
-            String distanceInfo = "";
-            if (currentIncident != null) {
-                double dist = station.calculateDistance(currentIncident.getLatitude(), currentIncident.getLongitude());
-                distanceInfo = " | DYSTANS: " + String.format("%.3f", dist); 
-            }
-    
-            System.out.println( "📍 " + station.getName() +  distanceInfo); 
-            System.out.println("---------------------------------------------------------------");
-            System.out.println(String.format("| %-5s | %-20s | %-15s |", "ID", "STAN", "CZAS TRWANIA"));
-            System.out.println("---------------------------------------------------------------");
-    
-            for (Truck truck : station.getAllTrucks()) {
-                // String color = ANSI_GREEN;
-                String stateName = "WOLNY";
-                
-                // Dobieramy kolor i nazwę zależnie od stanu
-                if (truck.getTruckState() instanceof States.ActionState) {
-                    // color = ANSI_RED;
-                    stateName = "W AKCJI 🚨";
-                } else if (truck.getTruckState() instanceof States.EnRouteState) {
-                    // color = ANSI_YELLOW;
-                    stateName = "DOJAZD 🚒";
-                } else if (truck.getTruckState() instanceof States.ReturningState) {
-                    // color = ANSI_BLUE;
-                    stateName = "POWRÓT ↩";
-                }
-    
-                // Rysujemy wiersz tabeli
-                System.out.println(String.format("| %-5d | %-20s | %-15d |",
-                    truck.getTruckId(),
-                    stateName,
-                    truck.getElapsedTime()
-                ));
-            }
-            System.out.println("---------------------------------------------------------------");
-        }
+        return new Incident(Incident.IncidentType.values()[randomTypeIndex], randomLatitude, randomLongitude);
     }
 
     public static void main(String[] args) {
         
         SimulationEngine engine = new SimulationEngine();
         engine.setup();
-        engine.start();
     }
     
     // gettery i settery
 
     public List<Truck> getAllTrucksFromStation(FireStation fireStation) {
         return fireStation.getAllTrucks();
+    }
+
+    public List<Truck> getAllTrucksFromAllStationsAsOneList() {
+        List<Truck> allTrucks = new ArrayList<>();
+        for(FireStation fireStation : this.fireStations) {
+            allTrucks.addAll(fireStation.getAllTrucks());
+        }
+        return allTrucks;
     }
 }
