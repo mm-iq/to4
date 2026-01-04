@@ -1,23 +1,25 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.util.List;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.List;
 
 import Models.Truck;
+import Visualization.MapPanel; // Importujemy naszą mapę
 import App.SimulationLogger;
 
 public class SkkmSwingApp {
 
     private SimulationEngine engine = new SimulationEngine();
+    
     private JFrame frame;
     private JTable table;
     private DefaultTableModel tableModel;
     private JTextArea logArea;
+    private MapPanel mapPanel; // Nasz nowy panel mapy
 
     public static void main(String[] args) {
-        // Uruchomienie w wątku interfejsu graficznego
         SwingUtilities.invokeLater(() -> {
             try {
                 SkkmSwingApp window = new SkkmSwingApp();
@@ -34,75 +36,77 @@ public class SkkmSwingApp {
     }
 
     private void initialize() {
-        // 1. Setup silnika
         engine.setup();
 
-        // 2. Główne okno
         frame = new JFrame();
-        frame.setTitle("System SKKM - Symulacja");
-        frame.setBounds(100, 100, 800, 600);
+        frame.setTitle("System SKKM - Wizualizacja Mapy");
+        frame.setBounds(50, 50, 1200, 700); // Powiększyłem okno
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.getContentPane().setLayout(new BorderLayout(0, 0));
 
-        // 3. Tabela (Górna część)
-        // Definiujemy kolumny
-        String[] columns = {"ID Wozu", "Jednostka", "Stan", "Czas (s)"};
+        // 1. SPLIT PANE (Podział okna na lewo i prawo)
+        JSplitPane splitPane = new JSplitPane();
+        splitPane.setResizeWeight(0.7); // Mapa zajmuje 70% szerokości
+        frame.getContentPane().add(splitPane, BorderLayout.CENTER);
+
+        // 2. LEWA STRONA - MAPA
+        // Przekazujemy listy z silnika do mapy, żeby miała co rysować
+        // Uwaga: Musimy dodać gettery w silniku (patrz krok 3)
+        mapPanel = new MapPanel(engine.getFireStations(), engine.getActiveIncidents());
+        splitPane.setLeftComponent(mapPanel);
+
+        // 3. PRAWA STRONA - TABELA I LOGI
+        JPanel rightPanel = new JPanel();
+        rightPanel.setLayout(new BorderLayout());
+        
+        // Tabela
+        String[] columns = {"ID", "JRG", "Stan", "Czas"};
         tableModel = new DefaultTableModel(columns, 0);
         table = new JTable(tableModel);
-        
-        // Dodajemy tabelę do panelu z przewijaniem
-        JScrollPane scrollPane = new JScrollPane(table);
-        frame.getContentPane().add(scrollPane, BorderLayout.CENTER);
+        JScrollPane tableScroll = new JScrollPane(table);
+        tableScroll.setPreferredSize(new Dimension(300, 400));
+        rightPanel.add(tableScroll, BorderLayout.CENTER);
 
-        // 4. Panel Logów (Dolna część)
-        JPanel logPanel = new JPanel();
-        logPanel.setLayout(new BorderLayout());
-        logPanel.setPreferredSize(new Dimension(800, 200));
-        
-        JLabel lblLogi = new JLabel("  Dziennik Zdarzeń:");
-        logPanel.add(lblLogi, BorderLayout.NORTH);
-
+        // Logi
         logArea = new JTextArea();
         logArea.setEditable(false);
-        logArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
         JScrollPane logScroll = new JScrollPane(logArea);
-        logPanel.add(logScroll, BorderLayout.CENTER);
+        logScroll.setPreferredSize(new Dimension(300, 200));
+        rightPanel.add(logScroll, BorderLayout.SOUTH);
 
-        frame.getContentPane().add(logPanel, BorderLayout.SOUTH);
+        splitPane.setRightComponent(rightPanel);
     }
 
     private void startSimulation() {
-        // 5. ZEGAR (Zamiast while(true))
-        // To wykonuje się co 1000 ms (1 sekunda)
-        Timer timer = new Timer(1000, new ActionListener() {
+        // Przyspieszamy timer do 100ms dla płynniejszej animacji
+        Timer timer = new Timer(100, new ActionListener() {
+            private int counter = 0;
+            
             @Override
             public void actionPerformed(ActionEvent e) {
-                // A. Krok symulacji
-                engine.tick();
+                counter++;
+                // Silnik aktualizujemy rzadziej (co 1 sek = 10 * 100ms)
+                if(counter % 10 == 0) {
+                    engine.tick();
+                    updateTable();
+                    updateLogs();
+                }
 
-                // B. Odświeżenie tabeli
-                updateTable();
-
-                // C. Odświeżenie logów
-                updateLogs();
+                // Mapę odświeżamy często (co 100ms) żeby animacja była płynna
+                mapPanel.repaint();
             }
         });
         timer.start();
     }
 
     private void updateTable() {
-        // Czyścimy stare dane
         tableModel.setRowCount(0);
-
-        // Pobieramy nową listę wozów z silnika
-        List<Truck> trucks = engine.getAllTrucksFromAllStationsAsOneList();
-
+        List<Truck> trucks = engine.getAllTrucksFromAllStationsAsOneList(); 
         for (Truck t : trucks) {
-            // Dodajemy wiersz do tabeli
             Object[] row = {
                 t.getTruckId(),
                 t.getTruckFireStation().getName(),
-                t.getTruckState().toString(), // Tu zadziała Twoje toString() ze stanów
+                t.getTruckState().toString(), 
                 t.getElapsedTime()
             };
             tableModel.addRow(row);
@@ -113,7 +117,6 @@ public class SkkmSwingApp {
         List<String> newLogs = SimulationLogger.consumeLogs();
         for (String log : newLogs) {
             logArea.append(log + "\n");
-            // Autoscroll do dołu
             logArea.setCaretPosition(logArea.getDocument().getLength());
         }
     }
