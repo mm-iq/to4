@@ -9,6 +9,7 @@ public class Truck {
     private FireStation truckFireStation;
     private final int truckId;
     private static int idCounter;
+    private Incident targetIncident;
 
     public Truck(FireStation fireStation) {
         this.currentTruckState = new IdleState();
@@ -45,5 +46,13 @@ public class Truck {
 
     public FireStation getTruckFireStation() {
         return this.truckFireStation;
+    }
+
+    public Incident getTargetIncident() {
+        return targetIncident;
+    }
+
+    public void setTargetIncident(Incident targetIncident) {
+        this.targetIncident = targetIncident;
     }
 }

@@ -75,6 +75,7 @@ public class DispatchCenter {
                 if(dispatchedTrucks < requiredTrucks) {
                     // zadysponowanie kolejnego wozu
                     truck.setTruckState(new EnRouteState());
+                    truck.setTargetIncident(incident);
                     SimulationLogger.addLog("Zadysponowano wóz nr: " + truck.getTruckId() + " ze stacji: " + currentFireStation.getName());
                     dispatchedTrucks++;
                 }

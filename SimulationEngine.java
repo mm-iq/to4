@@ -1,9 +1,12 @@
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 import App.*;
 import Models.*;
+import States.ActionState;
+import States.EnRouteState;
 
 public class SimulationEngine {
 
@@ -82,6 +85,31 @@ public class SimulationEngine {
         for(FireStation fireStation : fireStations) {
             for(Truck truck : fireStation.getAvailableTrucks() == null ? new ArrayList<Truck>() : getAllTrucksFromStation(fireStation)){
                 truck.updateTruckState();
+            }
+        }
+    }
+
+    private void cleanupIncident() {
+        Iterator<Incident> it = activeIncidents.iterator();
+        while(it.hasNext()) {
+            Incident incident = it.next();
+
+            boolean isStillActive = false;
+
+            // sprawdzamy czy jest jakiś wóz, który jedzie do tego zdarzenia lub bierze udział w akcji
+            for(FireStation fs : fireStations) {
+                for(Truck t : fs.getAllTrucks()) {
+                    if(t.getTargetIncident() == incident) {
+                        if(t.getTruckState() instanceof EnRouteState || t.getTruckState() instanceof ActionState) {
+                            isStillActive = true;
+                        }
+                    }
+                }
+            }
+
+            // jeśli żaden wóz nie zajmuje się tym zdarzeniem, czyli wraca lub jest wolny, usuwamy je
+            if(!isStillActive) {
+                it.remove();
             }
         }
     }
