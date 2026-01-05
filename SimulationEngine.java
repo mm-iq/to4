@@ -87,6 +87,8 @@ public class SimulationEngine {
                 truck.updateTruckState();
             }
         }
+
+        cleanupIncident();
     }
 
     private void cleanupIncident() {

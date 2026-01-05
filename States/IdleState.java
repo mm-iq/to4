@@ -12,4 +12,9 @@ public class IdleState implements ITruckState {
     public String toString() {
         return "WOLNY";
     }
+
+    @Override
+    public int getTimeRemaining(Truck truck) {
+        return 0;
+    }
 }

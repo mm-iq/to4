@@ -1,4 +1,9 @@
-package Visualization;
+    // private final double MIN_LAT = 49.94;
+    // private final double MAX_LAT = 50.16;
+    // private final double MIN_LON = 19.67;
+    // private final double MAX_LON = 20.15;
+
+   package Visualization;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,10 +16,10 @@ public class MapPanel extends JPanel {
     private List<FireStation> stations;
     private List<Incident> incidents;
 
-    // Granice mapy (z marginesem, żeby objąć Balice i Skawinę)
+    // TWOJE ORYGINALNE DANE Z REPOZYTORIUM
     private final double MIN_LAT = 49.94;
-    private final double MAX_LAT = 50.13;
-    private final double MIN_LON = 19.75;
+    private final double MAX_LAT = 50.16;
+    private final double MIN_LON = 19.67;
     private final double MAX_LON = 20.15;
 
     public MapPanel(List<FireStation> stations, List<Incident> incidents) {
@@ -28,46 +33,42 @@ public class MapPanel extends JPanel {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g;
         
-        // Wygładzanie krawędzi
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        // Ustawienie mniejszej, czytelniejszej czcionki
         g2.setFont(new Font("SansSerif", Font.BOLD, 11));
 
         int w = getWidth();
         int h = getHeight();
 
         // 1. RYSOWANIE STACJI
-        // Używamy pętli for z indeksem 'i', aby móc przesuwać napisy naprzemiennie
         for (int i = 0; i < stations.size(); i++) {
             FireStation fs = stations.get(i);
             int x = convertLonToX(fs.getLongitude(), w);
             int y = convertLatToY(fs.getLatitude(), h);
 
-            // Rysowanie kwadratu stacji
             g2.setColor(Color.CYAN);
             g2.fillRect(x - 5, y - 5, 10, 10);
             
-            // Przygotowanie tekstu
             long available = fs.getAvailableTrucks().size();
             long total = fs.getAllTrucks().size();
             String label = fs.getName() + " [" + available + "/" + total + "]";
 
-            // --- LOGIKA ANTY-KOLIZYJNA ---
-            // Jeśli indeks jest parzysty -> napis NAD stacją
-            // Jeśli nieparzysty -> napis POD stacją
-            // To zapobiega nachodzeniu na siebie nazw bliskich stacji (np. JRG1 i JRG2)
-            int yOffset;
-            if (i % 2 == 0) {
-                yOffset = -10; // Przesunięcie w górę
-            }
-            else if(i == 3) {
-                yOffset = -10;
-            } 
-            else {
-                yOffset = 20;  // Przesunięcie w dół
+            // Sztywne reguły dla stacji, które są blisko siebie
+            int yOffset = -10; // Domyślnie nad stacją
+
+            switch (i) {
+                case 1: // JRG-2 (jest pod JRG-1)
+                case 2: // JRG-3 (blisko JRG-5)
+                case 5: // JRG-6 (blisko JRG-4)
+                case 8: // JRG-ASPIRANCI
+                    yOffset = 20; // Przesunięcie w dół
+                    break;
+                default:
+                    yOffset = -10; // Przesunięcie w górę
+                    break;
             }
 
-            g2.drawString(label, x - 10, y + yOffset);
+            int stringWidth = g2.getFontMetrics().stringWidth(label);
+            g2.drawString(label, x - (stringWidth / 2), y + yOffset);
         }
 
         // 2. RYSOWANIE ZDARZEŃ
@@ -77,7 +78,6 @@ public class MapPanel extends JPanel {
 
             g2.setColor(Color.RED);
             g2.fillOval(x - 6, y - 6, 12, 12);
-            // Efekt "pulsu" (półprzezroczysta otoczka)
             g2.setColor(new Color(255, 0, 0, 100));
             g2.fillOval(x - 12, y - 12, 24, 24);
             
@@ -103,7 +103,7 @@ public class MapPanel extends JPanel {
 
         Incident target = truck.getTargetIncident();
         
-        // --- LOGIKA DOJAZDU (ŻÓŁTA LINIA) ---
+        // DOJAZD
         if (target != null && truck.getTruckState() instanceof EnRouteState) {
             int targetX = convertLonToX(target.getLongitude(), w);
             int targetY = convertLatToY(target.getLatitude(), h);
@@ -115,15 +115,14 @@ public class MapPanel extends JPanel {
             currentX = stationX + (int)((targetX - stationX) * progress);
             currentY = stationY + (int)((targetY - stationY) * progress);
             
-            g2.setColor(new Color(255, 255, 0, 100)); // Półprzezroczysta linia
+            g2.setColor(new Color(255, 255, 0, 100));
             g2.drawLine(stationX, stationY, targetX, targetY);
             
             g2.setColor(truckColor);
-            // Małe przesunięcie wozów względem siebie, żeby nie jechały "gęsiego" w jednym punkcie
             int offset = (truck.getTruckId() % 3) * 4; 
             g2.fillOval(currentX - 3 + offset, currentY - 3 + offset, 6, 6);
         } 
-        // --- LOGIKA POWROTU (POMARAŃCZOWA LINIA) ---
+        // POWRÓT
         else if (target != null && truck.getTruckState() instanceof ReturningState) {
             int targetX = convertLonToX(target.getLongitude(), w);
             int targetY = convertLatToY(target.getLatitude(), h);
@@ -132,7 +131,6 @@ public class MapPanel extends JPanel {
             if (progress > 1.0) progress = 1.0;
 
             truckColor = Color.ORANGE;
-            // Odwracamy wektor: od celu do bazy
             currentX = targetX + (int)((stationX - targetX) * progress);
             currentY = targetY + (int)((stationY - targetY) * progress);
             
@@ -143,13 +141,12 @@ public class MapPanel extends JPanel {
             int offset = (truck.getTruckId() % 3) * 4;
             g2.fillOval(currentX - 3 + offset, currentY - 3 + offset, 6, 6);
         }
-        // --- LOGIKA W AKCJI ---
+        // W AKCJI
         else if (truck.getTruckState() instanceof ActionState && target != null) {
             currentX = convertLonToX(target.getLongitude(), w);
             currentY = convertLatToY(target.getLatitude(), h);
             
             g2.setColor(Color.RED);
-            // Rozrzucamy kropki wokół pożaru
             int angle = (truck.getTruckId() * 45); 
             int dist = 12;
             int offsetX = (int)(Math.cos(Math.toRadians(angle)) * dist);
@@ -157,9 +154,22 @@ public class MapPanel extends JPanel {
             
             g2.fillOval(currentX + offsetX - 3, currentY + offsetY - 3, 6, 6);
         }
+
+        // --- RYSOWANIE LICZNIKA CZASU PRZY WOZIE ---
+        // Pobieramy czas z nowego interfejsu
+        int timeLeft = truck.getTruckState().getTimeRemaining(truck);
+        
+        // Wyświetlamy tylko jeśli jest > 0 (czyli nie dla stanu Idle/Wolny)
+        if (timeLeft > 0) {
+            g2.setColor(Color.WHITE);
+            // Wyświetlamy małą cyferkę obok kropki wozu
+            g2.setFont(new Font("SansSerif", Font.PLAIN, 10)); 
+            g2.drawString(String.valueOf(timeLeft) + "s", currentX + 6, currentY - 4);
+            // Przywracamy główną czcionkę dla reszty mapy
+            g2.setFont(new Font("SansSerif", Font.BOLD, 11)); 
+        }
     }
 
-    // --- MATEMATYKA SKALOWANIA ---
     private int convertLonToX(double lon, int width) {
         return (int) ((lon - MIN_LON) / (MAX_LON - MIN_LON) * width);
     }

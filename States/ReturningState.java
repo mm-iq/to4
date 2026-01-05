@@ -28,6 +28,11 @@ public class ReturningState implements ITruckState {
     }
 
     @Override
+    public int getTimeRemaining(Truck truck) {
+        return Math.max(0, travelTime - truck.getElapsedTime());
+    }
+
+    @Override
     public String toString() {
         return "POWRÓT";
     }

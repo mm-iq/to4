@@ -28,6 +28,12 @@ public class EnRouteState implements ITruckState {
     }
 
     @Override
+    public int getTimeRemaining(Truck truck) {
+        // Czas całkowity minus to co już upłynęło
+        return Math.max(0, travelTime - truck.getElapsedTime());
+    }
+
+    @Override
     public String toString() {
         return "DOJAZD";
     }

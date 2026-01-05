@@ -39,6 +39,11 @@ public class ActionState implements ITruckState {
     }
 
     @Override
+    public int getTimeRemaining(Truck truck) {
+        return Math.max(0, actionTime - truck.getElapsedTime());
+    }
+
+    @Override
     public String toString() {
         return "W AKCJI";
     }    
