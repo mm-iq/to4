@@ -37,16 +37,17 @@ public class DispatchCenter {
         IncidentType incidentType = incident.getType();
         switch(incidentType) {
                 
-            case PZ:
+            case POZAR:
                 this.setIncidentStrategy(new FireStrategy());
                 break;
-            case MZ:
+            case MIEJSCOWE_ZDARZENIE:
                 this.setIncidentStrategy(new EmergencyStrategy());
                 break;
             default:
                 SimulationLogger.addLog("Błąd: Nieobsługiwalny typ zdarzenia!");
         }
 
+        this.notifyObservers(incident);
         this.dispatchTrucks(incident, fireStations);
     }
 
@@ -76,7 +77,7 @@ public class DispatchCenter {
                     // zadysponowanie kolejnego wozu
                     truck.setTruckState(new EnRouteState());
                     truck.setTargetIncident(incident);
-                    SimulationLogger.addLog("Zadysponowano wóz nr: " + truck.getTruckId() + " ze stacji: " + currentFireStation.getName());
+                    SimulationLogger.addLog("Zadysponowano 🚒 " + truck.getTruckId() + " ze stacji 🏢 " + currentFireStation.getName());
                     dispatchedTrucks++;
                 }
             }

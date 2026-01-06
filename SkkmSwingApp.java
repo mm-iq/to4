@@ -6,7 +6,7 @@ import java.awt.event.ActionListener;
 import java.util.List;
 
 import Models.Truck;
-import Visualization.MapPanel; // Importujemy naszą mapę
+import Visualization.MapPanel;
 import App.SimulationLogger;
 
 public class SkkmSwingApp {
@@ -78,21 +78,23 @@ public class SkkmSwingApp {
     }
 
     private void startSimulation() {
-        // Przyspieszamy timer do 100ms dla płynniejszej animacji
+        // 100ms dla płynniejszej animacji
         Timer timer = new Timer(100, new ActionListener() {
             private int counter = 0;
-            
+
             @Override
             public void actionPerformed(ActionEvent e) {
                 counter++;
-                // Silnik aktualizujemy rzadziej (co 1 sek = 10 * 100ms)
-                if(counter % 10 == 0) {
+
+                // logi czytamy często, żeby nic nie "uciekało"
+                updateLogs();
+
+                // Silnik/tabela rzadziej (co 1 sek = 10 * 100ms)
+                if (counter % 10 == 0) {
                     engine.tick();
                     updateTable();
-                    updateLogs();
                 }
 
-                // Mapę odświeżamy często (co 100ms) żeby animacja była płynna
                 mapPanel.repaint();
             }
         });

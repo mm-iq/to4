@@ -1,9 +1,4 @@
-    // private final double MIN_LAT = 49.94;
-    // private final double MAX_LAT = 50.16;
-    // private final double MIN_LON = 19.67;
-    // private final double MAX_LON = 20.15;
-
-   package Visualization;
+package Visualization;
 
 import javax.swing.*;
 import java.awt.*;
@@ -16,7 +11,7 @@ public class MapPanel extends JPanel {
     private List<FireStation> stations;
     private List<Incident> incidents;
 
-    // TWOJE ORYGINALNE DANE Z REPOZYTORIUM
+    // Twoje sprawdzone współrzędne z repozytorium
     private final double MIN_LAT = 49.94;
     private final double MAX_LAT = 50.16;
     private final double MIN_LON = 19.67;
@@ -52,18 +47,17 @@ public class MapPanel extends JPanel {
             long total = fs.getAllTrucks().size();
             String label = fs.getName() + " [" + available + "/" + total + "]";
 
-            // Sztywne reguły dla stacji, które są blisko siebie
-            int yOffset = -10; // Domyślnie nad stacją
-
+            // Rozsuwanie napisów stacji, żeby na siebie nie wchodziły
+            int yOffset = -10; 
             switch (i) {
-                case 1: // JRG-2 (jest pod JRG-1)
-                case 2: // JRG-3 (blisko JRG-5)
-                case 5: // JRG-6 (blisko JRG-4)
+                case 1: // JRG-2
+                case 2: // JRG-3
+                case 5: // JRG-6
                 case 8: // JRG-ASPIRANCI
-                    yOffset = 20; // Przesunięcie w dół
+                    yOffset = 20; 
                     break;
                 default:
-                    yOffset = -10; // Przesunięcie w górę
+                    yOffset = -10;
                     break;
             }
 
@@ -85,7 +79,7 @@ public class MapPanel extends JPanel {
             g2.drawString(inc.getType().toString(), x + 10, y + 5);
         }
 
-        // 3. RYSOWANIE I ANIMACJA WOZÓW
+        // 3. RYSOWANIE WOZÓW
         for (FireStation fs : stations) {
             for (Truck truck : fs.getAllTrucks()) {
                 drawTruck(g2, truck, fs, w, h);
@@ -93,82 +87,116 @@ public class MapPanel extends JPanel {
         }
     }
 
-    private void drawTruck(Graphics2D g2, Truck truck, FireStation station, int w, int h) {
-        int stationX = convertLonToX(station.getLongitude(), w);
-        int stationY = convertLatToY(station.getLatitude(), h);
+    // Visualization/MapPanel.java
+
+private void drawTruck(Graphics2D g2, Truck truck, FireStation station, int w, int h) {
+    int stationX = convertLonToX(station.getLongitude(), w);
+    int stationY = convertLatToY(station.getLatitude(), h);
+    
+    int currentX = stationX;
+    int currentY = stationY;
+    Color truckColor = Color.GREEN;
+
+    Incident target = truck.getTargetIncident();
+    
+    // Obliczanie czasu i postępu (tak jak ustaliliśmy wcześniej)
+    int timeRemaining = truck.getTruckState().getTimeRemaining(truck);
+    int elapsedTime = truck.getElapsedTime();
+    int totalDuration = elapsedTime + timeRemaining;
+
+    double progress = (totalDuration == 0) ? 1.0 : (double) elapsedTime / totalDuration;
+    if (progress > 1.0) progress = 1.0;
+
+    // --- RYSOWANIE ---
+
+    // 1. DOJAZD (EnRouteState)
+    if (target != null && truck.getTruckState() instanceof EnRouteState) {
+        int targetX = convertLonToX(target.getLongitude(), w);
+        int targetY = convertLatToY(target.getLatitude(), h);
         
-        int currentX = stationX;
-        int currentY = stationY;
-        Color truckColor = Color.GREEN;
-
-        Incident target = truck.getTargetIncident();
+        truckColor = Color.YELLOW;
+        // Pozycja na linii
+        int lineX = stationX + (int)((targetX - stationX) * progress);
+        int lineY = stationY + (int)((targetY - stationY) * progress);
         
-        // DOJAZD
-        if (target != null && truck.getTruckState() instanceof EnRouteState) {
-            int targetX = convertLonToX(target.getLongitude(), w);
-            int targetY = convertLatToY(target.getLatitude(), h);
-            
-            double progress = (double) truck.getElapsedTime() / 4.0;
-            if (progress > 1.0) progress = 1.0;
-
-            truckColor = Color.YELLOW;
-            currentX = stationX + (int)((targetX - stationX) * progress);
-            currentY = stationY + (int)((targetY - stationY) * progress);
-            
-            g2.setColor(new Color(255, 255, 0, 100));
-            g2.drawLine(stationX, stationY, targetX, targetY);
-            
-            g2.setColor(truckColor);
-            int offset = (truck.getTruckId() % 3) * 4; 
-            g2.fillOval(currentX - 3 + offset, currentY - 3 + offset, 6, 6);
-        } 
-        // POWRÓT
-        else if (target != null && truck.getTruckState() instanceof ReturningState) {
-            int targetX = convertLonToX(target.getLongitude(), w);
-            int targetY = convertLatToY(target.getLatitude(), h);
-
-            double progress = (double) truck.getElapsedTime() / 4.0; 
-            if (progress > 1.0) progress = 1.0;
-
-            truckColor = Color.ORANGE;
-            currentX = targetX + (int)((stationX - targetX) * progress);
-            currentY = targetY + (int)((stationY - targetY) * progress);
-            
-            g2.setColor(new Color(255, 165, 0, 100));
-            g2.drawLine(targetX, targetY, stationX, stationY);
-
-            g2.setColor(truckColor);
-            int offset = (truck.getTruckId() % 3) * 4;
-            g2.fillOval(currentX - 3 + offset, currentY - 3 + offset, 6, 6);
-        }
-        // W AKCJI
-        else if (truck.getTruckState() instanceof ActionState && target != null) {
-            currentX = convertLonToX(target.getLongitude(), w);
-            currentY = convertLatToY(target.getLatitude(), h);
-            
-            g2.setColor(Color.RED);
-            int angle = (truck.getTruckId() * 45); 
-            int dist = 12;
-            int offsetX = (int)(Math.cos(Math.toRadians(angle)) * dist);
-            int offsetY = (int)(Math.sin(Math.toRadians(angle)) * dist);
-            
-            g2.fillOval(currentX + offsetX - 3, currentY + offsetY - 3, 6, 6);
-        }
-
-        // --- RYSOWANIE LICZNIKA CZASU PRZY WOZIE ---
-        // Pobieramy czas z nowego interfejsu
-        int timeLeft = truck.getTruckState().getTimeRemaining(truck);
+        // Rysujemy "duchową" linię trasy
+        g2.setColor(new Color(255, 255, 0, 100));
+        g2.drawLine(stationX, stationY, targetX, targetY);
         
-        // Wyświetlamy tylko jeśli jest > 0 (czyli nie dla stanu Idle/Wolny)
-        if (timeLeft > 0) {
-            g2.setColor(Color.WHITE);
-            // Wyświetlamy małą cyferkę obok kropki wozu
-            g2.setFont(new Font("SansSerif", Font.PLAIN, 10)); 
-            g2.drawString(String.valueOf(timeLeft) + "s", currentX + 6, currentY - 4);
-            // Przywracamy główną czcionkę dla reszty mapy
-            g2.setFont(new Font("SansSerif", Font.BOLD, 11)); 
-        }
+        // Obliczamy przesunięcie (żeby wozy nie jechały idealnie jeden na drugim)
+        int offset = (truck.getTruckId() % 3) * 5; 
+        
+        // AKTUALIZUJEMY currentX/Y o przesunięcie - teraz to jest faktyczna pozycja wozu
+        currentX = lineX + offset;
+        currentY = lineY + offset;
+
+        g2.setColor(truckColor);
+        g2.fillOval(currentX - 3, currentY - 3, 6, 6);
+    } 
+    // 2. POWRÓT (ReturningState)
+    else if (target != null && truck.getTruckState() instanceof ReturningState) {
+        int targetX = convertLonToX(target.getLongitude(), w);
+        int targetY = convertLatToY(target.getLatitude(), h);
+
+        truckColor = Color.ORANGE;
+        // Pozycja na linii (od celu do stacji)
+        int lineX = targetX + (int)((stationX - targetX) * progress);
+        int lineY = targetY + (int)((stationY - targetY) * progress);
+        
+        g2.setColor(new Color(255, 165, 0, 100));
+        g2.drawLine(targetX, targetY, stationX, stationY);
+
+        // Przesunięcie wizualne
+        int offset = (truck.getTruckId() % 3) * 5;
+
+        // AKTUALIZUJEMY currentX/Y - tekst podąży za przesunięciem
+        currentX = lineX + offset;
+        currentY = lineY + offset;
+
+        g2.setColor(truckColor);
+        g2.fillOval(currentX - 3, currentY - 3, 6, 6);
     }
+    // 3. W AKCJI (ActionState)
+    else if (truck.getTruckState() instanceof ActionState && target != null) {
+        int centerX = convertLonToX(target.getLongitude(), w);
+        int centerY = convertLatToY(target.getLatitude(), h);
+        
+        g2.setColor(Color.RED);
+        
+        // Rozłożenie wozów na okręgu
+        int angle = (truck.getTruckId() * 45); 
+        // Zwiększyłem dystans z 12 na 20, żeby liczniki na siebie nie właziły
+        int dist = 20; 
+        int offsetX = (int)(Math.cos(Math.toRadians(angle)) * dist);
+        int offsetY = (int)(Math.sin(Math.toRadians(angle)) * dist);
+        
+        // AKTUALIZUJEMY currentX/Y - teraz wskazują na kropkę na obwodzie, a nie środek
+        currentX = centerX + offsetX;
+        currentY = centerY + offsetY;
+        
+        g2.fillOval(currentX - 3, currentY - 3, 6, 6);
+    }
+    // 4. WOLNY (IdleState) - opcjonalnie, jeśli chcesz widzieć wozy w stacji
+    else {
+        // Jeśli wóz jest w bazie, też można go lekko przesunąć, żeby nie zlewał się ze stacją
+        // Ale zazwyczaj licznika czasu wtedy nie ma, więc nie jest to krytyczne.
+        // currentX/Y są już ustawione na stationX/Y
+    }
+
+    // --- RYSOWANIE LICZNIKA CZASU PRZY WOZIE ---
+    if (timeRemaining > 0) {
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("SansSerif", Font.PLAIN, 10)); 
+        
+        // Rysujemy względem zaktualizowanego currentX/Y (pozycja kropki)
+        // Przesuwamy napis o +8px w prawo i -5px w górę, żeby nie zasłaniał kropki
+        g2.drawString(String.valueOf(timeRemaining) + "s", currentX + 8, currentY - 5);
+        
+        g2.setFont(new Font("SansSerif", Font.BOLD, 11)); 
+    }
+}
+
+
 
     private int convertLonToX(double lon, int width) {
         return (int) ((lon - MIN_LON) / (MAX_LON - MIN_LON) * width);

@@ -29,7 +29,7 @@ public class ActionState implements ITruckState {
         // jeśli zakończył się czas akcji
         if(truck.getElapsedTime() >= actionTime) {
             // zakończenie akcji
-            SimulationLogger.addLog("Zakończyłem akcję: id" + truck.getTruckId() + "ze stacji: " + truck.getTruckFireStation());
+            SimulationLogger.addLog("🔙 Zakończyłem akcję 🚒 " + truck.getTruckId() + " ze stacji 🏢 " + truck.getTruckFireStation().getName());
             truck.setTruckState(new ReturningState());            
         }
         else {

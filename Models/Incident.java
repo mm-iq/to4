@@ -3,8 +3,8 @@ public class Incident {
     
 
     public enum IncidentType {
-        PZ,
-        MZ,
+        POZAR,
+        MIEJSCOWE_ZDARZENIE,
     };
 
     private IncidentType type;

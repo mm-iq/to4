@@ -31,15 +31,9 @@ public class FireStation implements IObserver {
     @Override
     public void update(Incident incident) {
         
-        SimulationLogger.addLog("STACJA [" + this.name + "]: Otrzymałem zgłoszenie o " +
+        SimulationLogger.addLog("🏢 [" + this.name + "]: Otrzymałem zgłoszenie o " +
         incident.getType() + " na pozycji (" + incident.getLatitude() + ", " + 
         incident.getLongitude() + ")");
-        /*
-        if(liczbaWolnychWozow > liczbaPotrzebnych)
-        wysyłam
-        else
-            iterator.next.take
-        */
     }
     
     // gettery i settery

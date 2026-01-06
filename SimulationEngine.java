@@ -7,6 +7,8 @@ import App.*;
 import Models.*;
 import States.ActionState;
 import States.EnRouteState;
+import States.IdleState;
+import States.ReturningState;
 
 public class SimulationEngine {
 
@@ -63,10 +65,10 @@ public class SimulationEngine {
         // dodanie wozów
         for(FireStation fireStation : fireStations) {
             for(int i=0; i<5; i++) fireStation.addTruck(new Truck(fireStation));
-            SimulationLogger.addLog("Dodałem wozy do stacji: " + fireStation.getName());
+            SimulationLogger.addLog("Dodałem wozy do " + fireStation.getName());
 
             skkm.addObserver(fireStation);
-            SimulationLogger.addLog("Dodałem stację: " + fireStation.getName() + " do listy obserwatorów.");
+            SimulationLogger.addLog("Dodałem stację " + fireStation.getName() + " do listy obserwatorów.");
         }
     }
 
@@ -77,7 +79,7 @@ public class SimulationEngine {
         if(second%10 == 0) {
             Incident newIncident = drawIncident();
             activeIncidents.add(newIncident);
-            SimulationLogger.addLog("!!! NOWE ZDARZENIE: " + newIncident.getType());
+            SimulationLogger.addLog("🚨 Nowe zdarzenie: " + newIncident.getType());
             skkm.handleIncident(newIncident, fireStations);
         }
 
@@ -85,6 +87,10 @@ public class SimulationEngine {
         for(FireStation fireStation : fireStations) {
             for(Truck truck : fireStation.getAvailableTrucks() == null ? new ArrayList<Truck>() : getAllTrucksFromStation(fireStation)){
                 truck.updateTruckState();
+
+                if (truck.getTruckState() instanceof IdleState) {
+                    truck.setTargetIncident(null);
+                }
             }
         }
 
@@ -102,7 +108,9 @@ public class SimulationEngine {
             for(FireStation fs : fireStations) {
                 for(Truck t : fs.getAllTrucks()) {
                     if(t.getTargetIncident() == incident) {
-                        if(t.getTruckState() instanceof EnRouteState || t.getTruckState() instanceof ActionState) {
+                        if( t.getTruckState() instanceof EnRouteState || 
+                            t.getTruckState() instanceof ActionState ||
+                            t.getTruckState() instanceof ReturningState) {
                             isStillActive = true;
                         }
                     }
@@ -118,11 +126,21 @@ public class SimulationEngine {
 
     public Incident drawIncident() {
 
-        int randomTypeIndex = random.nextInt(2);
+        Incident.IncidentType type;
+        
+        // losowanie rodzaju zdarzenia 30% pożary, 70% miejscowe zdarzenia
+        if(random.nextDouble() < 0.3) {
+            type = Incident.IncidentType.POZAR;
+        }
+        else {
+            type = Incident.IncidentType.MIEJSCOWE_ZDARZENIE;
+        }
+
+
         double randomLatitude = 49.95855 + (50.15456 - 49.95855) * random.nextDouble();
         double randomLongitude = 19.68829 + (20.02470 - 19.68829) * random.nextDouble();
 
-        return new Incident(Incident.IncidentType.values()[randomTypeIndex], randomLatitude, randomLongitude);
+        return new Incident(type, randomLatitude, randomLongitude);
     }
 
     public static void main(String[] args) {
